@@ -135,11 +135,23 @@ streamlit run frontend/app.py
 
 ---
 
-## 📸 Screenshots
+## Screenshots
 
-Coming Soon
+### Application Home
 
----
+![Application Home](docs/home.png)
+
+### Chat Interface
+
+![Chat Interface](docs/chat_interface.png)
+
+### Generated Result
+
+![Generated Result](docs/result.png)
+
+## Architecture
+
+![Project Architecture](docs/architecture.png)
 
 ## 📌 Future Improvements
 
