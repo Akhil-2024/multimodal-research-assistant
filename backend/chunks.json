@@ -1,0 +1,117 @@
+[
+    {
+        "chunk_id": 0,
+        "page": 1,
+        "text": "Speech and Language Processing. Daniel Jurafsky & James H. Martin. Copyright © 2026. All\nrights reserved. Draft of January 6, 2026.\nCHAPTER\n8\nTransformers\n“The true art of memory is the art of attention ”\nSamuel Johnson, Idler #74, September 1759\nIn this chapter we introduce thetransformer, the standard architecture for build-\ning large language models. As we discussed in the prior chapter, transformer-based\nlarge language models have completely changed the ﬁeld of speech and language\nprocessing. Indeed, every subsequent chapter in this textbook will make use of them.\nAs with the previous chapter, we’ll focus for this chapter on the use of transformers\nto model left-to-right (sometimes called causal or autoregressive) language model-\ning, in which we are given a sequence of input tokens an"
+    },
+    {
+        "chunk_id": 1,
+        "page": 1,
+        "text": "d causal or autoregressive) language model-\ning, in which we are given a sequence of input tokens and predict output tokens one\nby one by conditioning on the prior context.\nLayer Norm\n+\nLayer Norm\nMultiHead\nAttention\nFeedforward\nSoftmax\nPositional\nUnembedding\nEmbedding\n+\nresidual\nstream\nN times\noutput probabilities (over tokens)\n+\ninput token\nLayer Norm\n+\nLayer Norm\nMultiHead\nAttention\nFeedforward\nresidual\nstream\nN times\n+\nFigure 8.1 A transformer decoder for language modeling, showing the residual stream for\nprocessing an input token. A single token is embedded and passed forward in the network,\nwith the feedforward and attention components adding information. The multihead attention\nlayer takes inputs (not shown in detail) from the neighboring token streams. This is thus one\ncolumn of an"
+    },
+    {
+        "chunk_id": 2,
+        "page": 1,
+        "text": "takes inputs (not shown in detail) from the neighboring token streams. This is thus one\ncolumn of an autoregressive transformer language model, taking an input token and outputting\na distribution over next tokens.\nFig. 8.1 sketches the transformer architecture following a single token as it is\npasses up through the layers of the network. Each token is ﬁrst converted to an\nembedding from the embedding matrix E. Recall from Chapter 6 in Section ??\nthat E is a linear layer that maps a token id to a vector embedding representing that\ntoken. Each token in the vocabulary has an initial embedding representation in E."
+    },
+    {
+        "chunk_id": 3,
+        "page": 2,
+        "text": "2 CHAPTER 8 • T RANSFORMERS\nTransformers also have a special mechanism for encoding the position/index of the\ntoken in the input string, which is simply added to the embedding. The resulting\nembedding represents both the word and its position. and is then passed through a\nset of N transformer blocks.\nIt’s common to think of each of these transformer blocks as part of a stream in\nwhich the input embedding is directly passed up to the output, while simultaneously\nbeing enriched by the application of various processing modules: the multi-head\nattention layer, feedforward networks and the layer normalization. The value of the\nstream at any layer is the sum of the original embedding and all the outputs from all\nthe previous layers and blocks.\nThe core intuition of the transformer, and the compo"
+    },
+    {
+        "chunk_id": 4,
+        "page": 2,
+        "text": "utputs from all\nthe previous layers and blocks.\nThe core intuition of the transformer, and the component that distinguishes it\nfrom the feedforward layers we saw in Chapter 6, is this multi-head attention layer,\nalso called a self-attention layer. Attention can be thought of as a way to build\ncontextual representations of a token’s meaning by attending to and integrating\ninformation from surrounding tokens, helping the model learn how tokens relate to\neach other over large spans. It can also be thought of as a way to move information\nfrom one residual stream to another, augmenting the stream at one token position\nwith information from another token position.\nAfter the N transformer blocks we take the output embedding that is produced\nby the ﬁnal transformer block, pass it through an linear"
+    },
+    {
+        "chunk_id": 5,
+        "page": 2,
+        "text": " take the output embedding that is produced\nby the ﬁnal transformer block, pass it through an linear unembedding matrix U\nand then a softmax over the vocabulary to generate a distribution over possible next\ntokens. These last two components (the unembedding matrix and the softmax) are\nsometimes called the language modeling head . In the rest of this chatper we’ll\nintroduce attention and the rest of these modules in more detail.\nFig. ?? shows the transformer architecture applied to a context window with\nthe words So long and thanks for , showing at each token position what is the\nmost likely token to be generated. In this full ﬁgure, the set of N blocks maps an\nentire context window of input vectors (x1, ...,xn) to a window of output vectors\n(h1, ...,hn) of the same length. A column might c"
+    },
+    {
+        "chunk_id": 6,
+        "page": 2,
+        "text": "vectors (x1, ...,xn) to a window of output vectors\n(h1, ...,hn) of the same length. A column might contain from 12 to 96 or more\nstacked blocks. The arrows in the ﬁgure shows how information from the hidden\nrepresentations of preceding tokens is incorporated into the transformer block.\nTransformer-based language models are complex, and so the details will unfold\nover this chapter and the next few chapters. Chapter 7 already discussed how lan-\nguage models are pretrained, and how tokens are generated via sampling. In the\nrest of this chapter we’ll introduce multi-head attention, the rest of the transformer\nblock, and the input encoding and language modeling head components of the trans-\nformer. Chapter 9 introduces masked language modeling and the BERT family of\nbidirectional transformer en"
+    },
+    {
+        "chunk_id": 7,
+        "page": 2,
+        "text": "r. Chapter 9 introduces masked language modeling and the BERT family of\nbidirectional transformer encoder models. Chapter 10 shows how to instruction-\ntune language models to perform NLP tasks, and how to align the model with hu-\nman preferences. Chapter 12 will introduce machine translation with the encoder-\ndecoder architecture. And we’ll see application of the transformer to speech recog-\nnition, as well as further use of the encoder-decoder architecture, in Chapter 15.\n8.1 Attention\nRecall from Chapter 5 that for word2vec and other static embeddings, the repre-\nsentation of a word’s meaning is always the same vector irrespective of the context:\nthe word chicken, for example, is always represented by the same ﬁxed vector. So\na static vector for the word it might somehow encode that this"
+    },
+    {
+        "chunk_id": 8,
+        "page": 2,
+        "text": "presented by the same ﬁxed vector. So\na static vector for the word it might somehow encode that this is a pronoun used"
+    },
+    {
+        "chunk_id": 9,
+        "page": 3,
+        "text": "8.1 • A TTENTION 3\nStacked\nTransformer\nBlocks\nSo long and thanks for\nlong and thanks forNext token all\n…\n…\n…\nU\nInput tokens\nx1 x2\nLanguage\nModeling\nHead\nx3 x4 x5\nInput\nEncoding\n E\n1+\nE\n2+\nE\n3+\nE\n4+\nE\n5+\n…\n… ………\nU\n U\n U\n U\n…\nlogits logits logits logits logits\nFigure 8.2 The architecture of a (left-to-right) transformer, showing how each input token\nget encoded, passed through a set of stacked transformer blocks, and then a language model\nhead that predicts the next token. The embeddings at each token position in the residual\nstream are passed up the stack, and the arrows in the ﬁgure shows how information from the\nhidden representations of preceding tokens are also incorporated.\nfor animals and inanimate entities. But in context it has a much richer meaning.\nConsider it in one of these two "
+    },
+    {
+        "chunk_id": 10,
+        "page": 3,
+        "text": "nd inanimate entities. But in context it has a much richer meaning.\nConsider it in one of these two sentences:\n(8.1) The chicken didn’t cross the road because it was too tired.\n(8.2) The chicken didn’t cross the road because it was too wide.\nIn (8.1) it is the chicken (i.e., the reader knows that the chicken was tired), while\nin (8.2) it is the road (and the reader knows that the road was wide). 1 That is, if\nwe are to compute the meaning of this sentence, we’ll need the meaning of it to be\nassociated with the chicken in the ﬁrst sentence and associated with the road in\nthe second one, sensitive to the context.\nFurthermore, consider reading left to right like a causal language model, pro-\ncessing the sentence up to the word it:\n(8.3) The chicken didn’t cross the road because it\nAt this poi"
+    },
+    {
+        "chunk_id": 11,
+        "page": 3,
+        "text": "ssing the sentence up to the word it:\n(8.3) The chicken didn’t cross the road because it\nAt this point we don’t yet know which thing it is going to end up referring to! So a\nrepresentation of it at this point might have aspects of both chicken and road as\nthe reader is trying to guess what happens next.\nThis fact that words have rich linguistic relationships with other words that may\nbe far away pervades language. Consider two more examples:\n(8.4) The keys to the cabinet are on the table.\n(8.5) I walked along the pond, and noticed one of the trees along the bank.\nIn (8.4), the phrase The keys is the subject of the sentence, and in English and many\nlanguages, must agree in grammatical number with the verbare; in this case both are\nplural. In English we can’t use a singular verb like is with"
+    },
+    {
+        "chunk_id": 12,
+        "page": 3,
+        "text": "with the verbare; in this case both are\nplural. In English we can’t use a singular verb like is with a plural subject like keys\n(we’ll discuss agreement more in Chapter 18). In (8.5), we know that bank refers\nto the side of a pond or river and not a ﬁnancial institution because of the context,\nincluding words like pond. (We’ll discuss word senses more in Chapter 9.)\n1 We say that in the ﬁrst example it corefers with the chicken, and in the second it corefers with the\nroad; we’ll return to this in Chapter 23."
+    },
+    {
+        "chunk_id": 13,
+        "page": 4,
+        "text": "4 CHAPTER 8 • T RANSFORMERS\nThe point of all these examples is that these contextual words that help us com-\npute the meaning of words in context can be quite far away in the sentence or para-\ngraph. Transformers can build contextual representations of word meaning, contex-\ntual embeddings, by integrating the meaning of these helpful contextual words. In acontextual\nembeddings\ntransformer, layer by layer, we build up richer and richer contextualized representa-\ntions of the meanings of input tokens. At each layer, we compute the representation\nof a token i by combining information about i from the previous layer with infor-\nmation about the neighboring tokens to produce a contextualized representation for\neach word at each position.\nAttention is the mechanism in the transformer that weighs"
+    },
+    {
+        "chunk_id": 14,
+        "page": 4,
+        "text": "esentation for\neach word at each position.\nAttention is the mechanism in the transformer that weighs and combines the\nrepresentations from appropriate other tokens in the context from layer k to build\nthe representation for tokens in layer k + 1.\nThe\nchicken\ndidn’t\ncross\nthe\nroad\nbecause\nit\nwas\ntoo\ntired\nThe\nchicken\ndidn’t\ncross\nthe\nroad\nbecause\nit\nwas\ntoo\ntired\nLayer k+1\nLayer k\nself-attention distribution\ncolumns corresponding to input tokens\nFigure 8.3 The self-attention weight distribution α that is part of the computation of the\nrepresentation for the word it at layer k + 1. In computing the representation for it, we attend\ndifferently to the various words at layer k, with darker shades indicating higher self-attention\nvalues. Note that the transformer is attending highly to the colum"
+    },
+    {
+        "chunk_id": 15,
+        "page": 4,
+        "text": " indicating higher self-attention\nvalues. Note that the transformer is attending highly to the columns corresponding to the\ntokens chicken and road , a sensible result, since at the point whereit occurs, it could plausibly\ncorefer with the chicken or the road, and hence we’d like the representation for it to draw on\nthe representation for these earlier words. Figure adapted from Uszkoreit (2017).\nFig. 8.3 shows a schematic example simpliﬁed from a transformer (Uszkoreit,\n2017). The ﬁgure describes the situation when the current token is it and we need\nto compute a contextual representation for this token at layerk +1 of the transformer,\ndrawing on the representations (from layer k) of every prior token. The ﬁgure uses\ncolor to represent the attention distribution over the contextual words:"
+    },
+    {
+        "chunk_id": 16,
+        "page": 4,
+        "text": "prior token. The ﬁgure uses\ncolor to represent the attention distribution over the contextual words: the tokens\nchicken and road both have a high attention weight, meaning that as we are com-\nputing the representation for it, we will draw most heavily on the representation for\nchicken and road. This will be useful in building the ﬁnal representation for it,\nsince it will end up coreferring with either chicken or road.\nLet’s now turn to how this attention distribution is represented and computed.\n8.1.1 Attention more formally\nAs we’ve said, the attention computation is a way to compute a vector representation\nfor a token at a particular layer of a transformer, by selectively attending to and\nintegrating information from prior tokens at the previous layer. Attention takes an"
+    },
+    {
+        "chunk_id": 17,
+        "page": 4,
+        "text": "integrating information from prior tokens at the previous layer. Attention takes an"
+    },
+    {
+        "chunk_id": 18,
+        "page": 5,
+        "text": "8.1 • A TTENTION 5\ninput representation xi corresponding to the input token at position i, and a context\nwindow of prior inputs x1..xi−1, and produces an output ai.\nIn causal, left-to-right language models, the context is any of the prior words.\nThat is, when processing xi, the model has access to xi as well as the representations\nof all the prior tokens in the context window (context windows consist of thousands\nof tokens) but no tokens after i. (By contrast, in Chapter 9 we’ll generalize attention\nso it can also look ahead to future words.)\nFig. 8.4 illustrates this ﬂow of information in an entire causal self-attention layer,\nin which this same attention computation happens in parallel at each token position\ni. Thus a self-attention layer maps input sequences (x1, ...,xn) to output seque"
+    },
+    {
+        "chunk_id": 19,
+        "page": 5,
+        "text": "each token position\ni. Thus a self-attention layer maps input sequences (x1, ...,xn) to output sequences\nof the same length (a1, ...,an).\nattentionattentionSelf-Attention\nLayer\nattentionattentionattention\na1 a2 a3 a4 a5\nx3 x4 x5x1 x2\nFigure 8.4 Information ﬂow in causal self-attention. When processing each input xi, the\nmodel attends to all the inputs up to, and including xi.\nSimpliﬁed version of attention At its heart, attention is really just a weighted\nsum of context vectors, with a lot of complications added to how the weights are\ncomputed and what gets summed. For pedagogical purposes let’s ﬁrst describe a\nsimpliﬁed intuition of attention, in which the attention output ai at token position i\nis simply the weighted sum of all the representations x j, for all j≤ i; we’ll use αi j\nto mea"
+    },
+    {
+        "chunk_id": 20,
+        "page": 5,
+        "text": "ion i\nis simply the weighted sum of all the representations x j, for all j≤ i; we’ll use αi j\nto mean how much x j should contribute to ai:\nSimpliﬁed version: ai =\n∑\nj≤i\nαi jx j (8.6)\nEach αi j is a scalar used for weighing the value of input x j when summing up\nthe inputs to compute ai. How shall we compute this α weighting? In attention we\nweight each prior embedding proportionally to howsimilar it is to the current token\ni. So the output of attention is a sum of the embeddings of prior tokens weighted\nby their similarity with the current token embedding. We compute similarity scores\nvia dot product, which maps two vectors into a scalar value ranging from −∞ to\n∞. The larger the score, the more similar the vectors that are being compared. We’ll\nnormalize these scores with a softmax to cr"
+    },
+    {
+        "chunk_id": 21,
+        "page": 5,
+        "text": " more similar the vectors that are being compared. We’ll\nnormalize these scores with a softmax to create the vector of weights αi j, j≤ i.\nSimpliﬁed Version: score(xi, x j) = xi· x j (8.7)\nαi j = softmax(score(xi, x j))∀ j≤ i (8.8)\nThus in Fig. 8.4 we computea3 by computing three scores: x3· x1, x3· x2 and x3· x3,\nnormalizing them by a softmax, and using the resulting probabilities as weights\nindicating each of their proportional relevance to the current position i. Of course,\nthe softmax weight will likely be highest for xi, since xi is very similar to itself,\nresulting in a high dot product. But other context words may also be similar toi, and\nthe softmax will also assign some weight to those words. Then we use these weights\nas the α values in Eq. 8.6 to compute the weighted sum that is "
+    },
+    {
+        "chunk_id": 22,
+        "page": 5,
+        "text": "ose words. Then we use these weights\nas the α values in Eq. 8.6 to compute the weighted sum that is our a3.\nThe simpliﬁed attention in equations 8.6 – 8.8 demonstrates the attention-based\napproach to computing ai: compare the xi to prior vectors, normalize those scores"
+    }
+]

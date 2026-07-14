@@ -1,0 +1,10 @@
+[
+    {
+        "role": "user",
+        "content": "What is RAG?"
+    },
+    {
+        "role": "assistant",
+        "content": "Answer:\nRAG stands for Retrieval-Augmented Generation. It works by first retrieving relevant chunks of information, and then the large language model (LLM) generates an answer using only those retrieved chunks.\n\nSources Used:\n- chatbot_report.pdf, Page 18"
+    }
+]

@@ -1,0 +1,26 @@
+[
+    {
+        "role": "user",
+        "content": "My favorite field is robotics"
+    },
+    {
+        "role": "assistant",
+        "content": "That's awesome! Robotics is such an exciting and rapidly evolving field. Are you interested in any particular area within robotics, like industrial robots, autonomous vehicles, humanoid robots, or maybe something related to AI and machine learning in robotics? I'd love to hear more about your interests!"
+    },
+    {
+        "role": "user",
+        "content": "What is my favorite field?"
+    },
+    {
+        "role": "assistant",
+        "content": "Your favorite field is robotics."
+    },
+    {
+        "role": "user",
+        "content": "Explain RAG in 2 lines"
+    },
+    {
+        "role": "assistant",
+        "content": "RAG (Retrieval-Augmented Generation) is a technique that combines information retrieval with generative models to produce more accurate and context-aware responses. It first fetches relevant documents from a knowledge base and then generates answers based on both the query and the retrieved information."
+    }
+]
