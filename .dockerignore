@@ -1,6 +1,13 @@
 venv/
+.venv/
 __pycache__/
 *.pyc
 .env
-cache/
-chat_history.json
+runtime_data/
+frontend/cache/
+frontend/chat_history.json
+backend/memory.json
+backend/embeddings.json
+backend/*.faiss
+.git/
+.pytest_cache/
