@@ -1,15 +1,18 @@
-# Virtual environment
+# Python / virtual environments
 venv/
-
-# Environment variables
-.env
-
-# Python cache
+.venv/
 __pycache__/
 *.pyc
-
-# Jupyter
+.pytest_cache/
+# Private configuration and generated runtime assets
+.env
+runtime_data/
+# Local Streamlit / legacy cache (already tracked files require git rm --cached)
+frontend/cache/
+frontend/chat_history.json
+backend/memory.json
+backend/embeddings.json
+backend/*.faiss
+# Developer tools
 .ipynb_checkpoints/
-
-# VS Code
 .vscode/
